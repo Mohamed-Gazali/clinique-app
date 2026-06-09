@@ -47,7 +47,7 @@ export default function Medecins() {
         ? await API.put(`/medecins/${editing}`, form)
         : await API.post("/medecins", form);
       setMsg(editing ? "✅ Médecin modifié !" : "✅ Médecin ajouté !");
-      setForm(EMPTY);
+      setForm(EMPTY);  
       setEditing(null);
       setShowModal(false);
       load();
@@ -55,7 +55,7 @@ export default function Medecins() {
       setMsg("❌ " + (err.response?.data?.detail || "Accès refusé"));
     }
     setTimeout(() => setMsg(""), 3000);
-  };
+  };_
 
   const openEdit = (m) => {
     setForm({

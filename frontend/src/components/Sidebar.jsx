@@ -4,6 +4,7 @@ const NAV = [
   { path: "/",           icon: "📊", label: "Dashboard"    },
   { path: "/patients",   icon: "👤", label: "Patients"     },
   { path: "/medecins",   icon: "👨‍⚕️", label: "Médecins"    },
+  { path: "/ordonnances", icon: "💊", label: "Ordonnances" },
   { path: "/rendezvous", icon: "📅", label: "Rendez-vous"  },
   { path: "/consultations", icon: "🩺", label: "Consultations" },
 ];

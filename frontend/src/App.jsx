@@ -7,6 +7,7 @@ import Patients      from "./pages/Patients";
 import Medecins      from "./pages/Medecins";
 import RendezVous    from "./pages/RendezVous";
 import Consultations from "./pages/Consultations";
+import Ordonnances   from "./pages/Ordonnances";
 import API           from "./api";
 
 function PrivateRoute({ children }) {
@@ -37,13 +38,14 @@ function Layout({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter>tt
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
         <Route path="/patients" element={<PrivateRoute><Layout><Patients /></Layout></PrivateRoute>} />
         <Route path="/medecins" element={<PrivateRoute><Layout><Medecins /></Layout></PrivateRoute>} />
         <Route path="/rendezvous" element={<PrivateRoute><Layout><RendezVous /></Layout></PrivateRoute>} />
+        <Route path="/ordonnances" element={<PrivateRoute><Layout><Ordonnances /></Layout></PrivateRoute>} />
         <Route path="/consultations" element={<PrivateRoute><Layout><Consultations /></Layout></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

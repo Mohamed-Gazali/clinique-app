@@ -31,20 +31,21 @@ app.add_middleware(
 # ─────────────────────────────────────────
 # DATABASE
 # ─────────────────────────────────────────
+# ─── DATABASE avec pool Neon ───────────────────────────────────────────────
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///clinique.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-if DATABASE_URL:
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    # Neon nécessite SSL
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={"sslmode": "require"} if "neon.tech" in DATABASE_URL else {}
-    )
-else:
-    engine = create_engine("sqlite:///clinique.db")
 
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,      # reconnexion automatique si connexion morte
+    pool_recycle=300,        # recycle toutes les 5 min (Neon coupe à ~5min)
+    pool_size=5,
+    max_overflow=10,
+    connect_args={"sslmode": "require", "connect_timeout": 10} if "neon.tech" in DATABASE_URL else {}
+)
+
+# ─── ROUTE publique pour inscription (sans token requis) ─────────────────
 # ─────────────────────────────────────────
 # MODÈLES
 # ─────────────────────────────────────────
@@ -99,13 +100,16 @@ class Consultation(SQLModel, table=True):
     date:           str = Field(default_factory=lambda: datetime.now().isoformat())
 
 class Ordonnance(SQLModel, table=True):
-    id:              int | None = Field(default=None, primary_key=True)
-    consultation_id: int        = Field(foreign_key="consultation.id")
-    patient_id:      int        = Field(foreign_key="patient.id")
-    medecin_id:      int        = Field(foreign_key="medecin.id")
-    medicaments:     str
-    instructions:    str | None = None
-    date:            str = Field(default_factory=lambda: datetime.now().isoformat())
+    id:               int | None = Field(default=None, primary_key=True)
+    consultation_id:  int        = Field(foreign_key="consultation.id")
+    patient_id:       int        = Field(foreign_key="patient.id")
+    medecin_id:       int        = Field(foreign_key="medecin.id")
+    medicaments:      str
+    instructions:     str | None = None
+    diagnostic:       str | None = None        # nouveau
+    duree_traitement: str | None = None        # nouveau
+    prochain_rdv:     str | None = None        # nouveau
+    date:             str = Field(default_factory=lambda: datetime.now().isoformat())
 
 # ─────────────────────────────────────────
 # SCHEMAS
@@ -159,8 +163,13 @@ class OrdonnanceCreate(BaseModel):
     consultation_id: int
     patient_id:      int
     medecin_id:      int
-    medicaments:     str
+    medicaments:     str        # JSON string : liste de médicaments
     instructions:    str | None = None
+    diagnostic:      str | None = None   # nouveau
+    duree_traitement:str | None = None   # nouveau
+    prochain_rdv:    str | None = None   # nouveau
+
+# Mettez à jour le modèle Ordonnance aussi :
 
 # ─────────────────────────────────────────
 # STARTUP
@@ -230,6 +239,24 @@ def login(data: UserCreate):
             raise HTTPException(status_code=401, detail="Identifiants incorrects")
         token = create_token(user.id, user.name, user.role)
         return {"success": True, "token": token, "name": user.name, "role": user.role}
+
+@app.post("/users/public")
+def register_user(data: UserCreate):
+    # Seul rôle autorisé à s'inscrire librement
+    if data.role not in ("medecin", "secretaire"):
+        raise HTTPException(status_code=400, detail="Rôle non autorisé")
+    with Session(engine) as session:
+        if session.exec(select(User).where(User.name == data.name)).first():
+            raise HTTPException(status_code=400, detail="Nom déjà pris")
+        if len(data.password) < 6:
+            raise HTTPException(status_code=400, detail="Mot de passe trop court")
+        hashed = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
+        user   = User(name=data.name, password=hashed, role=data.role, email=data.email)
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+        return {"id": user.id, "name": user.name, "role": user.role}
+
 
 @app.post("/users")
 def create_user(data: UserCreate, _: dict = Depends(require_admin)):
@@ -438,7 +465,9 @@ def get_consultations_patient(patient_id: int, _: dict = Depends(get_current_use
 # ─────────────────────────────────────────
 
 @app.post("/ordonnances")
-def create_ordonnance(data: OrdonnanceCreate, _: dict = Depends(get_current_user)):
+def create_ordonnance(data: OrdonnanceCreate, user: dict = Depends(get_current_user)):
+    if user.get("role") not in ("medecin", "admin"):
+        raise HTTPException(status_code=403, detail="Réservé aux médecins")
     with Session(engine) as session:
         ordonnance = Ordonnance(**data.dict())
         session.add(ordonnance)
@@ -453,6 +482,23 @@ def get_ordonnances_patient(patient_id: int, _: dict = Depends(get_current_user)
             select(Ordonnance).where(Ordonnance.patient_id == patient_id)
         ).all()
 
+@app.get("/ordonnances/{ordonnance_id}")
+def get_ordonnance(ordonnance_id: int, _: dict = Depends(get_current_user)):
+    with Session(engine) as session:
+        o = session.get(Ordonnance, ordonnance_id)
+        if not o:
+            raise HTTPException(status_code=404, detail="Ordonnance non trouvée")
+        return o
+
+@app.delete("/ordonnances/{ordonnance_id}")
+def delete_ordonnance(ordonnance_id: int, _: dict = Depends(require_admin)):
+    with Session(engine) as session:
+        o = session.get(Ordonnance, ordonnance_id)
+        if not o:
+            raise HTTPException(status_code=404, detail="Ordonnance non trouvée")
+        session.delete(o)
+        session.commit()
+        return {"message": "Ordonnance supprimée"}
 # ─────────────────────────────────────────
 # ROUTES — DASHBOARD STATS
 # ─────────────────────────────────────────
