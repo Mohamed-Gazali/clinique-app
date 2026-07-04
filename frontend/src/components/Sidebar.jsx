@@ -1,20 +1,24 @@
+// src/components/Sidebar.jsx
 import { useNavigate, useLocation } from "react-router-dom";
 
 const NAV = [
-  { path: "/",           icon: "📊", label: "Dashboard"    },
-  { path: "/patients",   icon: "👤", label: "Patients"     },
-  { path: "/medecins",   icon: "👨‍⚕️", label: "Médecins"    },
-  { path: "/ordonnances", icon: "💊", label: "Ordonnances" },
-  { path: "/rendezvous", icon: "📅", label: "Rendez-vous"  },
-  { path: "/consultations", icon: "🩺", label: "Consultations" },
+  { path: "/",                icon: "📊", label: "Dashboard"          },
+  { path: "/statistique-crm", icon: "📇", label: "Statistique et CRM" }, // ← ajouté
+  { path: "/patients",        icon: "👤", label: "Patients"           },
+  { path: "/medecins",        icon: "👨‍⚕️", label: "Médecins"          },
+  { path: "/ordonnances",     icon: "💊", label: "Ordonnances"        },
+  { path: "/rendezvous",      icon: "📅", label: "Rendez-vous"        },
+  { path: "/consultations",   icon: "🩺", label: "Consultations"      },
+  { path: "/assistant-ia",    icon: "🤖", label: "Assistant IA"       },
+  { path: "/parametres",      icon: "⚙️", label: "Paramètres"         },
 ];
 
 export default function Sidebar({ counts = {} }) {
-  const navigate  = useNavigate();
-  const location  = useLocation();
-  const user      = localStorage.getItem("user") || "Admin";
-  const role      = localStorage.getItem("role") || "admin";
-  const initials  = user.slice(0, 2).toUpperCase();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const user     = localStorage.getItem("user") || "Admin";
+  const role     = localStorage.getItem("role") || "admin";
+  const initials = user.slice(0, 2).toUpperCase();
 
   const logout = () => { localStorage.clear(); navigate("/login"); };
 

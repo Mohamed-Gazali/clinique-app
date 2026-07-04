@@ -1,3 +1,4 @@
+// src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Sidebar       from "./components/Sidebar";
@@ -9,6 +10,11 @@ import RendezVous    from "./pages/RendezVous";
 import Consultations from "./pages/Consultations";
 import Ordonnances   from "./pages/Ordonnances";
 import API           from "./api";
+import AssistantIA   from "./pages/AssistantIA";
+import RoutesIA      from "./pages/RoutesIA";
+import StatsDashboard from "./pages/StatsDashboard"; // ✅ PascalCase + chemin corrigé
+import StatistiqueCRM from "./pages/StatistiqueCRM"; // ✅ nouvelle page Statistique et CRM
+import Paramètres     from "./pages/Paramètres";
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem("token");
@@ -19,7 +25,6 @@ function Layout({ children }) {
   const [counts, setCounts] = useState({});
 
   useEffect(() => {
-    // Badge compteurs pour la sidebar
     Promise.all([
       API.get("/rendezvous").catch(() => ({ data: [] })),
     ]).then(([rdvRes]) => {
@@ -38,7 +43,7 @@ function Layout({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter>tt
+    <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
@@ -47,6 +52,11 @@ export default function App() {
         <Route path="/rendezvous" element={<PrivateRoute><Layout><RendezVous /></Layout></PrivateRoute>} />
         <Route path="/ordonnances" element={<PrivateRoute><Layout><Ordonnances /></Layout></PrivateRoute>} />
         <Route path="/consultations" element={<PrivateRoute><Layout><Consultations /></Layout></PrivateRoute>} />
+        <Route path="/assistant-ia" element={<PrivateRoute><Layout><AssistantIA /></Layout></PrivateRoute>} />
+        <Route path="/routes-ia" element={<PrivateRoute><Layout><RoutesIA /></Layout></PrivateRoute>} />
+        {/* Statistique et CRM : satisfaction patient + suivi relationnel */}
+        <Route path="/statistique-crm" element={<PrivateRoute><Layout><StatistiqueCRM /></Layout></PrivateRoute>} />
+        <Route path="/parametres" element={<PrivateRoute><Layout><Paramètres /></Layout></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

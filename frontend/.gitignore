@@ -22,3 +22,28 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Variables d'environnement
+.env
+.env.*
+
+# Base de données
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Environnement virtuel
+venv/
+.venv/
+env/
+
+# Pytest
+.pytest_cache/
+
+# Fichiers de cache
+*.cache
